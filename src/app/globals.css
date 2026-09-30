@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. These are defaults only: the root layout injects the values
+ * saved in Admin → Theme as a :root block, which overrides them.
+ */
+@theme {
+  --color-primary: #125a68;
+  --color-secondary: #0b3d47;
+  --color-accent: #e9a23b;
+  --color-background: #fbfaf3;
+  --color-surface: #ffffff;
+  --color-text: #102326;
+  --color-muted: #55666a;
+  --color-border: #dde5e3;
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-on-accent: #111111;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-display: var(--font-serif), ui-serif, Georgia, serif;
+
+  --radius-card: var(--radius, 4px);
+  --radius-btn: var(--radius-button, 6px);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  }
+}
+
+@layer components {
+  .container-site {
+    width: 100%;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-site {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-site {
+      padding-inline: 2rem;
+    }
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-btn);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .btn-primary:hover {
+    background: var(--color-secondary);
+    color: var(--color-on-secondary);
+  }
+
+  .btn-accent {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  .btn-accent:hover {
+    background: color-mix(in srgb, var(--color-accent) 85%, black);
+  }
+
+  .btn-outline {
+    border: 1px solid currentColor;
+    color: inherit;
+  }
+  .btn-outline:hover {
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -4rem;
+    z-index: 100;
+    padding: 0.75rem 1rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-radius: var(--radius-btn);
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+}
+
+/* Typography for CMS rich text (Tiptap output rendered by <RichText>). */
+@layer components {
+  .prose-mpa {
+    max-width: 72ch;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+  .prose-mpa > * + * {
+    margin-top: 1.1em;
+  }
+  .prose-mpa h2 {
+    margin-top: 2em;
+    font-size: 1.75rem;
+  }
+  .prose-mpa h3 {
+    margin-top: 1.6em;
+    font-size: 1.35rem;
+  }
+  .prose-mpa h4 {
+    margin-top: 1.4em;
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .prose-mpa h2 + *,
+  .prose-mpa h3 + *,
+  .prose-mpa h4 + * {
+    margin-top: 0.6em;
+  }
+  .prose-mpa > :first-child {
+    margin-top: 0;
+  }
+  .prose-mpa a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  .prose-mpa a:hover {
+    text-decoration-thickness: 2px;
+  }
+  .prose-mpa ul,
+  .prose-mpa ol {
+    padding-left: 1.4em;
+  }
+  .prose-mpa ul {
+    list-style: disc;
+  }
+  .prose-mpa ol {
+    list-style: decimal;
+  }
+  .prose-mpa li + li {
+    margin-top: 0.4em;
+  }
+  .prose-mpa li::marker {
+    color: var(--color-primary);
+  }
+  .prose-mpa blockquote {
+    border-left: 3px solid var(--color-accent);
+    padding-left: 1.25em;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-style: italic;
+  }
+  .prose-mpa hr {
+    border-color: var(--color-border);
+    margin-block: 2.5em;
+  }
+  .prose-mpa figure img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-card);
+  }
+  .prose-mpa figcaption {
+    margin-top: 0.6em;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+  }
+  .prose-mpa code {
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+    padding: 0.1em 0.35em;
+    font-size: 0.9em;
+  }
+}
+
+/* Subtle scroll reveal, only where supported and when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

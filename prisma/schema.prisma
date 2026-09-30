@@ -1,0 +1,482 @@
+// Merciful Paradise Academy — website CMS schema.
+// Connection URLs live in prisma.config.ts (Prisma 7). Runtime access goes through
+// the pg driver adapter in src/lib/db.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ─────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NavLocation {
+  HEADER
+  FOOTER
+  LEGAL
+}
+
+enum HomepageSectionKey {
+  HERO
+  ABOUT
+  STATISTICS
+  PROGRAMS
+  WHY_MPA
+  STUDENT_LIFE
+  NEWS
+  EVENTS
+  GALLERY
+  CTA
+}
+
+enum HighlightGroup {
+  WHY_MPA
+  STUDENT_LIFE
+  ADMISSION_STEP
+  CAMPUS
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum RadiusScale {
+  NONE
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum ButtonStyle {
+  SQUARE
+  ROUNDED
+  PILL
+}
+
+// ─── Admin users & audit ───────────────────────────────────────────────────────
+
+/// One row per Supabase Auth user allowed into /admin. `id` equals auth.users.id.
+model AdminUser {
+  id          String    @id @db.Uuid
+  email       String    @unique
+  name        String
+  role        Role      @default(ADMIN)
+  active      Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  auditLogs AuditLog[]
+  media     Media[]
+  articles  Article[]
+}
+
+model AuditLog {
+  id        String     @id @default(cuid())
+  userId    String?    @db.Uuid
+  user      AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userEmail String?
+  action    String
+  entity    String
+  entityId  String?
+  summary   String?
+  metadata  Json?
+  createdAt DateTime   @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+// ─── Media ─────────────────────────────────────────────────────────────────────
+
+model Media {
+  id           String     @id @default(cuid())
+  bucket       String
+  path         String
+  filename     String
+  title        String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  alt          String     @default("")
+  caption      String?
+  category     String?
+  archivedAt   DateTime?
+  uploadedById String?    @db.Uuid
+  uploadedBy   AdminUser? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  logoFor          SiteSettings[]    @relation("SiteLogo")
+  footerLogoFor    SiteSettings[]    @relation("SiteFooterLogo")
+  faviconFor       SiteSettings[]    @relation("SiteFavicon")
+  ogImageFor       SiteSettings[]    @relation("SiteOgImage")
+  pageHeroFor      Page[]            @relation("PageHero")
+  pageOgFor        Page[]            @relation("PageOg")
+  homepageSections HomepageSection[]
+  heroSlides       HeroSlide[]
+  highlights       Highlight[]
+  programs         Program[]
+  articles         Article[]
+  events           Event[]
+  albumCovers      GalleryAlbum[]
+  galleryItems     GalleryItem[]
+  staff            StaffMember[]
+
+  @@unique([bucket, path])
+  @@index([createdAt])
+}
+
+// ─── Site-wide settings ────────────────────────────────────────────────────────
+
+/// Singleton (id = 1).
+model SiteSettings {
+  id             Int      @id @default(1)
+  schoolName     String
+  shortName      String
+  tagline        String?
+  description    String?
+  foundedYear    String?
+  vision         String?
+  mission        String?
+  coreValues     String[]
+  phone          String?
+  email          String?
+  address        String?
+  mapEmbedUrl    String?
+  officeHours    String?
+  /// [{ platform: string, url: string }]
+  socialLinks    Json     @default("[]")
+  copyright      String?
+  headerCtaLabel String?
+  headerCtaUrl   String?
+  seoTitle       String?
+  seoDescription String?
+
+  logoId       String?
+  logo         Media?  @relation("SiteLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  footerLogoId String?
+  footerLogo   Media?  @relation("SiteFooterLogo", fields: [footerLogoId], references: [id], onDelete: SetNull)
+  faviconId    String?
+  favicon      Media?  @relation("SiteFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
+  ogImageId    String?
+  ogImage      Media?  @relation("SiteOgImage", fields: [ogImageId], references: [id], onDelete: SetNull)
+
+  updatedAt DateTime @updatedAt
+}
+
+/// Singleton (id = 1). Only validated tokens — never raw CSS.
+model ThemeSettings {
+  id              Int         @id @default(1)
+  colorPrimary    String
+  colorSecondary  String
+  colorAccent     String
+  colorBackground String
+  colorSurface    String
+  colorText       String
+  colorMuted      String
+  colorBorder     String
+  radius          RadiusScale @default(SMALL)
+  buttonStyle     ButtonStyle @default(ROUNDED)
+  updatedAt       DateTime    @updatedAt
+}
+
+model NavigationItem {
+  id           String           @id @default(cuid())
+  location     NavLocation
+  label        String
+  href         String?
+  isExternal   Boolean          @default(false)
+  openInNewTab Boolean          @default(false)
+  enabled      Boolean          @default(true)
+  sortOrder    Int              @default(0)
+  parentId     String?
+  parent       NavigationItem?  @relation("NavChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children     NavigationItem[] @relation("NavChildren")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([location, sortOrder])
+}
+
+// ─── Pages & homepage ──────────────────────────────────────────────────────────
+
+/// Editable standalone pages: about, campuses, admissions, privacy, …
+model Page {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  eyebrow        String?
+  intro          String?
+  /// Tiptap JSON document
+  content        Json?
+  status         ContentStatus @default(DRAFT)
+  seoTitle       String?
+  seoDescription String?
+  heroImageId    String?
+  heroImage      Media?        @relation("PageHero", fields: [heroImageId], references: [id], onDelete: SetNull)
+  ogImageId      String?
+  ogImage        Media?        @relation("PageOg", fields: [ogImageId], references: [id], onDelete: SetNull)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model HomepageSection {
+  id                 String             @id @default(cuid())
+  key                HomepageSectionKey @unique
+  enabled            Boolean            @default(true)
+  sortOrder          Int                @default(0)
+  eyebrow            String?
+  title              String?
+  subtitle           String?
+  description        String?
+  imageId            String?
+  image              Media?             @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  ctaLabel           String?
+  ctaUrl             String?
+  secondaryCtaLabel  String?
+  secondaryCtaUrl    String?
+  /// How many linked items to show (news, events, programs, gallery).
+  itemLimit          Int?
+  updatedAt          DateTime           @updatedAt
+}
+
+model HeroSlide {
+  id             String   @id @default(cuid())
+  eyebrow        String?
+  title          String
+  subtitle       String?
+  description    String?
+  imageId        String?
+  image          Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  primaryLabel   String?
+  primaryUrl     String?
+  secondaryLabel String?
+  secondaryUrl   String?
+  enabled        Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+/// Small repeatable items grouped by purpose: "Why MPA" strengths, student-life
+/// areas, admission steps and campuses.
+model Highlight {
+  id        String         @id @default(cuid())
+  group     HighlightGroup
+  title     String
+  subtitle  String?
+  text      String?
+  icon      String?
+  href      String?
+  imageId   String?
+  image     Media?         @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  visible   Boolean        @default(true)
+  sortOrder Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([group, sortOrder])
+}
+
+model Statistic {
+  id          String   @id @default(cuid())
+  value       String
+  label       String
+  description String?
+  icon        String?
+  visible     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Programs, news, events ────────────────────────────────────────────────────
+
+model Program {
+  id               String        @id @default(cuid())
+  title            String
+  slug             String        @unique
+  shortDescription String?
+  description      Json?
+  gradeRange       String?
+  category         String?
+  featured         Boolean       @default(false)
+  status           ContentStatus @default(DRAFT)
+  sortOrder        Int           @default(0)
+  imageId          String?
+  image            Media?        @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  seoTitle         String?
+  seoDescription   String?
+  publishedAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status, sortOrder])
+}
+
+model ArticleCategory {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Article {
+  id             String           @id @default(cuid())
+  title          String
+  slug           String           @unique
+  excerpt        String?
+  content        Json?
+  authorName     String?
+  tags           String[]
+  featured       Boolean          @default(false)
+  status         ContentStatus    @default(DRAFT)
+  publishedAt    DateTime?
+  categoryId     String?
+  category       ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  imageId        String?
+  image          Media?           @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  createdById    String?          @db.Uuid
+  createdBy      AdminUser?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+model Event {
+  id              String        @id @default(cuid())
+  title           String
+  slug            String        @unique
+  excerpt         String?
+  description     Json?
+  startsAt        DateTime
+  endsAt          DateTime?
+  allDay          Boolean       @default(false)
+  location        String?
+  registrationUrl String?
+  featured        Boolean       @default(false)
+  status          ContentStatus @default(DRAFT)
+  imageId         String?
+  image           Media?        @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  seoTitle        String?
+  seoDescription  String?
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status, startsAt])
+}
+
+// ─── Gallery ───────────────────────────────────────────────────────────────────
+
+model GalleryAlbum {
+  id           String        @id @default(cuid())
+  title        String
+  slug         String        @unique
+  description  String?
+  category     String?
+  date         DateTime?
+  status       ContentStatus @default(DRAFT)
+  sortOrder    Int           @default(0)
+  featured     Boolean       @default(false)
+  coverImageId String?
+  coverImage   Media?        @relation(fields: [coverImageId], references: [id], onDelete: SetNull)
+  items        GalleryItem[]
+  publishedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model GalleryItem {
+  id        String       @id @default(cuid())
+  albumId   String
+  album     GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  caption   String?
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  @@unique([albumId, mediaId])
+  @@index([albumId, sortOrder])
+}
+
+// ─── People & FAQs ─────────────────────────────────────────────────────────────
+
+model StaffMember {
+  id         String        @id @default(cuid())
+  name       String
+  position   String
+  department String?
+  biography  String?
+  email      String?
+  phone      String?
+  featured   Boolean       @default(false)
+  status     ContentStatus @default(DRAFT)
+  sortOrder  Int           @default(0)
+  photoId    String?
+  photo      Media?        @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model Faq {
+  id        String        @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  status    ContentStatus @default(DRAFT)
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status, category, sortOrder])
+}
+
+// ─── Contact ───────────────────────────────────────────────────────────────────
+
+model ContactSubmission {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  status    MessageStatus @default(NEW)
+  /// HMAC of the sender IP — used for rate limiting, never shown.
+  ipHash    String?
+  readAt    DateTime?
+  repliedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([ipHash, createdAt])
+}
