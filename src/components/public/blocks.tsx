@@ -104,7 +104,7 @@ export function StepList({ steps }: { steps: HighlightData[] }) {
     <ol className="grid gap-px overflow-hidden rounded-card border border-border bg-border md:grid-cols-3">
       {steps.map((step, i) => (
         <li key={step.id} className="bg-surface p-6 sm:p-8">
-          <span className="font-display text-5xl text-accent">{String(i + 1).padStart(2, "0")}</span>
+          <span className="font-display text-5xl text-primary">{String(i + 1).padStart(2, "0")}</span>
           <h3 className="mt-4 text-xl">{step.title}</h3>
           {step.text && <p className="mt-2 text-muted">{step.text}</p>}
         </li>

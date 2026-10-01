@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { TAGS } from "@/lib/cache-tags";
 import { absoluteUrl } from "@/lib/seo";
 import { publishedWhere } from "@/server/queries/published";
+import { isSystemPage } from "@/lib/pages";
 
 const STATIC_PAGES: { path: string; slug?: string; priority: number }[] = [
   { path: "/", priority: 1 },
@@ -41,6 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: slug ? pageUpdated.get(slug) : undefined,
       priority,
     })),
+    ...pages.filter((p) => !isSystemPage(p.slug)).map((p) => ({ url: absoluteUrl(`/${p.slug}`), lastModified: p.updatedAt, priority: 0.5 })),
     ...programs.map((p) => ({ url: absoluteUrl(`/programs/${p.slug}`), lastModified: p.updatedAt, priority: 0.7 })),
     ...articles.map((a) => ({ url: absoluteUrl(`/news/${a.slug}`), lastModified: a.updatedAt, priority: 0.6 })),
     ...events.map((e) => ({ url: absoluteUrl(`/events/${e.slug}`), lastModified: e.updatedAt, priority: 0.5 })),

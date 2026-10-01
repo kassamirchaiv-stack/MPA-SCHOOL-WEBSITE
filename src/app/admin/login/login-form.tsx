@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { signIn } from "@/server/actions/auth";
 import { Field, inputClass } from "@/components/admin/field";
+import { useFieldId } from "@/components/admin/use-field-id";
 
 const schema = z.object({
   email: z.email("Enter a valid email address"),
@@ -17,6 +18,7 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function LoginForm() {
+  const fid = useFieldId();
   const params = useSearchParams();
   const [serverError, setServerError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -41,9 +43,9 @@ export function LoginForm() {
           {serverError}
         </p>
       )}
-      <Field label="Email" htmlFor="email" error={errors.email?.message}>
+      <Field label="Email" htmlFor={fid("email")} error={errors.email?.message}>
         <input
-          id="email"
+          id={fid("email")}
           type="email"
           autoComplete="username"
           className={inputClass}
@@ -51,9 +53,9 @@ export function LoginForm() {
           {...register("email")}
         />
       </Field>
-      <Field label="Password" htmlFor="password" error={errors.password?.message}>
+      <Field label="Password" htmlFor={fid("password")} error={errors.password?.message}>
         <input
-          id="password"
+          id={fid("password")}
           type="password"
           autoComplete="current-password"
           className={inputClass}

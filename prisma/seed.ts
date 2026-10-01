@@ -105,7 +105,7 @@ async function main() {
   }
 
   const logo = await seedMedia("logo.png", "site-assets", "Merciful Paradise Academy logo", "MPA logo");
-  const favicon = await seedMedia("apple-touch-icon.png", "site-assets", "", "MPA icon");
+  const favicon = await seedMedia("mpa-icon.png", "site-assets", "Merciful Paradise Academy logo", "MPA icon");
   const campus = await seedMedia(
     "hero.jpg",
     "site-assets",

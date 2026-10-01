@@ -33,15 +33,15 @@ export default async function ContactPage() {
           <h2 id="contact-details" className="text-3xl">
             Get in touch
           </h2>
-          <dl className="mt-8 space-y-6">
+          <ul className="mt-8 space-y-6">
             {details.map(({ icon: Icon, label, value, href }) => (
-              <div key={label} className="flex gap-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-card bg-primary/10 text-primary">
-                  <Icon aria-hidden className="size-5" />
+              <li key={label} className="flex gap-4">
+                <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-card bg-primary/10 text-primary">
+                  <Icon className="size-5" />
                 </span>
                 <div>
-                  <dt className="text-sm font-bold tracking-wide text-muted uppercase">{label}</dt>
-                  <dd className="mt-1 text-lg break-words">
+                  <p className="text-sm font-bold tracking-wide text-muted uppercase">{label}</p>
+                  <p className="mt-1 text-lg break-words">
                     {href ? (
                       <a href={href} className="hover:text-primary">
                         {value}
@@ -49,11 +49,11 @@ export default async function ContactPage() {
                     ) : (
                       value
                     )}
-                  </dd>
+                  </p>
                 </div>
-              </div>
+              </li>
             ))}
-          </dl>
+          </ul>
         </section>
         <section aria-labelledby="contact-form" className="rounded-card border border-border bg-surface p-6 sm:p-10">
           <h2 id="contact-form" className="text-3xl">

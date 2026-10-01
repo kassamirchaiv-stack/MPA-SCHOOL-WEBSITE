@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import {
   CalendarDays,
+  CircleUser,
   FileText,
   GraduationCap,
   HelpCircle,
@@ -19,6 +20,7 @@ import {
   Newspaper,
   Palette,
   ScrollText,
+  Search,
   Settings,
   Sparkles,
   UserCog,
@@ -48,6 +50,8 @@ const ICONS: Record<string, LucideIcon> = {
   mail: Mail,
   "user-cog": UserCog,
   "scroll-text": ScrollText,
+  search: Search,
+  "circle-user": CircleUser,
 };
 
 function NavLinks({ groups, onNavigate }: { groups: AdminNavGroup[]; onNavigate?: () => void }) {
@@ -57,7 +61,7 @@ function NavLinks({ groups, onNavigate }: { groups: AdminNavGroup[]; onNavigate?
       {groups.map((group, i) => (
         <div key={group.label ?? i}>
           {group.label && (
-            <p className="mb-2 px-3 text-xs font-semibold tracking-wider text-zinc-400 uppercase">{group.label}</p>
+            <p className="mb-2 px-3 text-xs font-semibold tracking-wider text-zinc-500 uppercase">{group.label}</p>
           )}
           <ul className="space-y-0.5">
             {group.items.map((item) => {
@@ -67,6 +71,8 @@ function NavLinks({ groups, onNavigate }: { groups: AdminNavGroup[]; onNavigate?
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    // Admin pages are always rendered fresh; prefetching ~20 of them per view only adds load.
+                    prefetch={false}
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
                     className={cn(

@@ -12,10 +12,16 @@ for (const path of PAGES) {
   });
 }
 
-test("unknown page shows the 404 page", async ({ page }) => {
-  const response = await page.goto("/this-page-does-not-exist");
+test("unknown pages show the not-found page and are not indexed", async ({ page }) => {
+  // Top-level addresses can be custom CMS pages, so unknown ones stream a
+  // not-found page (soft 404) marked noindex; deeper unknown paths return 404.
+  for (const path of ["/this-page-does-not-exist", "/news/this-article-does-not-exist"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: /couldn’t find that page/i })).toBeVisible();
+    await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached();
+  }
+  const response = await page.goto("/about/does-not-exist");
   expect(response?.status()).toBe(404);
-  await expect(page.getByRole("heading", { name: /couldn’t find that page/i })).toBeVisible();
 });
 
 test("navigation works on this viewport", async ({ page, isMobile }) => {
@@ -48,7 +54,7 @@ test("contact form validates and submits", async ({ page }) => {
   await expect(page.getByText("Please enter your name")).toBeVisible();
 
   await page.getByLabel("Full name").fill("Playwright Test");
-  await page.getByLabel("Email", { exact: true }).fill("e2e@example.com");
+  await page.getByLabel("Email", { exact: true }).fill("contact@e2e.mpa-test.invalid");
   await page.getByLabel("Subject").fill("Automated test message");
   await page.getByLabel("Message", { exact: true }).fill("This message was sent by the automated end-to-end test suite.");
   await page.waitForTimeout(3200); // the form rejects submissions faster than 3 s as spam
